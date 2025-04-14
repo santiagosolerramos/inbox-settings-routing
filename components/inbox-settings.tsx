@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, createContext } from "react"
-import { GripVertical, Sparkles, Plus, Edit, Trash2, PlusCircle } from "lucide-react"
+import { GripVertical, Sparkles, Plus, Edit, Trash2, PlusCircle, Users, BrainCircuit } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -14,7 +14,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -36,24 +36,24 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 // Datos de ejemplo
-const SAMPLE_TAGS = ["Soporte", "Ventas", "Facturación", "Técnico", "Devolución", "Envío", "Producto"]
+const SAMPLE_TAGS = ["Support", "Sales", "Billing", "Technical", "Return", "Shipping", "Product"]
 const SAMPLE_TOPICS = [
-  "Problema técnico",
-  "Consulta de factura",
-  "Cambio de producto",
-  "Estado de envío",
-  "Cancelación",
+  "Technical issue",
+  "Invoice query",
+  "Product change",
+  "Shipping status",
+  "Cancellation",
 ]
-const SAMPLE_TEAMS = ["Soporte Técnico", "Atención al Cliente", "Ventas", "Logística", "Devoluciones"]
+const SAMPLE_TEAMS = ["Technical Support", "Customer Service", "Sales", "Logistics", "Returns"]
 const SAMPLE_AGENTS = [
-  { id: 1, name: "Ana García", team: "Soporte Técnico" },
-  { id: 2, name: "Carlos López", team: "Soporte Técnico" },
-  { id: 3, name: "María Rodríguez", team: "Atención al Cliente" },
-  { id: 4, name: "Juan Martínez", team: "Atención al Cliente" },
-  { id: 5, name: "Laura Sánchez", team: "Ventas" },
-  { id: 6, name: "Pedro Ramírez", team: "Ventas" },
-  { id: 7, name: "Sofía Torres", team: "Logística" },
-  { id: 8, name: "Diego Flores", team: "Devoluciones" },
+  { id: 1, name: "Ana García", team: "Technical Support" },
+  { id: 2, name: "Carlos López", team: "Technical Support" },
+  { id: 3, name: "María Rodríguez", team: "Customer Service" },
+  { id: 4, name: "Juan Martínez", team: "Customer Service" },
+  { id: 5, name: "Laura Sánchez", team: "Sales" },
+  { id: 6, name: "Pedro Ramírez", team: "Sales" },
+  { id: 7, name: "Sofía Torres", team: "Logistics" },
+  { id: 8, name: "Diego Flores", team: "Returns" },
 ]
 const SAMPLE_COUNTRIES = [
   "Argentina",
@@ -173,7 +173,7 @@ const RoutingConditionItem = ({ condition, onEdit, onDelete }: RoutingConditionI
         <div className="w-full">
           <div className="flex items-center gap-2 mb-2">
             {condition.subconditions && condition.subconditions.length > 0 ? (
-              <Badge className="bg-purple-600">Condición compuesta</Badge>
+              <Badge className="bg-purple-600">Compound Condition</Badge>
             ) : (
               <Badge variant="outline" className="bg-purple-50 text-purple-700 hover:bg-purple-50">
                 {condition.conditionType}
@@ -186,8 +186,7 @@ const RoutingConditionItem = ({ condition, onEdit, onDelete }: RoutingConditionI
           {condition.subconditions && condition.subconditions.length > 0 && (
             <div className="pl-3 border-l-2 border-purple-200 mb-3">
               <p className="text-xs text-muted-foreground mb-2">
-                Condiciones combinadas (
-                {condition.operator === "AND" ? "todas deben cumplirse" : "al menos una debe cumplirse"}):
+                Combined conditions ({condition.operator === "AND" ? "all must be met" : "at least one must be met"}):
               </p>
               <div className="space-y-1">
                 {condition.subconditions.map((subcondition, idx) => (
@@ -203,7 +202,7 @@ const RoutingConditionItem = ({ condition, onEdit, onDelete }: RoutingConditionI
           )}
 
           <div className="text-sm text-muted-foreground">
-            Asignar a: {condition.assignType === "team" ? "Equipo" : "Agente"} - {condition.assignValue}
+            Assign to: {condition.assignType === "team" ? "Team" : "Agent"} - {condition.assignValue}
             {condition.assignType === "team" && condition.specificAgent && <span> ({condition.specificAgent})</span>}
           </div>
         </div>
@@ -241,67 +240,32 @@ interface Rule {
   specificAgent: string | null;
 }
 
+// Componente para el formulario de condición de routing (TRADUCCIÓN)
 const RoutingConditionForm = ({ isOpen, onClose, onSave, editingCondition = null }: RoutingConditionFormProps) => {
   const [name, setName] = useState(editingCondition?.name || "")
   const [conditions, setConditions] = useState<RuleCondition[]>([
     { type: "message", operator: "contains", value: "" }
   ])
   const [combinator, setCombinator] = useState<"AND" | "OR">("AND")
-
-  // Estado para asignación
   const [assignType, setAssignType] = useState(editingCondition?.assignType || "team")
-  const [selectedTeam, setSelectedTeam] = useState(
-    editingCondition?.assignType === "team" ? editingCondition.assignValue : ""
-  )
+  const [selectedTeam, setSelectedTeam] = useState( editingCondition?.assignType === "team" ? editingCondition.assignValue : "" )
   const [assignToSpecific, setAssignToSpecific] = useState(editingCondition?.specificAgent ? true : false)
   const [specificAgent, setSpecificAgent] = useState(editingCondition?.specificAgent || "")
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(
-    editingCondition?.assignType === "agent" ? editingCondition.assignValue.split(", ") : []
-  )
+  const [selectedAgents, setSelectedAgents] = useState<string[]>( editingCondition?.assignType === "agent" ? editingCondition.assignValue.split(", ") : [] )
 
-  // Filtrar agentes por equipo seleccionado
   const filteredAgents = selectedTeam ? SAMPLE_AGENTS.filter((agent) => agent.team === selectedTeam) : SAMPLE_AGENTS
 
-  const addCondition = () => {
-    setConditions([...conditions, { type: "message", operator: "contains", value: "" }])
-  }
-
-  const removeCondition = (index: number) => {
-    if (conditions.length > 1) {
-      setConditions(conditions.filter((_, i) => i !== index))
-    }
-  }
-
-  const updateCondition = (index: number, field: keyof RuleCondition, value: string) => {
-    const newConditions = [...conditions]
-    newConditions[index] = { ...newConditions[index], [field]: value }
-    setConditions(newConditions)
-  }
+  const addCondition = () => { setConditions([...conditions, { type: "message", operator: "contains", value: "" }]) }
+  const removeCondition = (index: number) => { if (conditions.length > 1) { setConditions(conditions.filter((_, i) => i !== index)) } }
+  const updateCondition = (index: number, field: keyof RuleCondition, value: string) => { const nc = [...conditions]; nc[index] = { ...nc[index], [field]: value }; setConditions(nc); }
 
   const handleSave = () => {
-    // Validar que se haya ingresado un nombre
-    if (!name.trim()) {
-      alert("Por favor, ingresa un nombre para la regla")
-      return
-    }
-
-    // Validar que todas las condiciones tengan valores
-    if (conditions.some(c => !c.value)) {
-      alert("Por favor, completa todos los valores de las condiciones")
-      return
-    }
-
-    // Validar que se haya seleccionado un equipo o agente
-    if (!selectedTeam && selectedAgents.length === 0) {
-      alert("Por favor, selecciona un equipo o agente para asignar")
-      return
-    }
-
-    // Validar que si se seleccionó asignar a un agente específico, se haya seleccionado el agente
-    if (assignToSpecific && !specificAgent) {
-      alert("Por favor, selecciona un agente específico")
-      return
-    }
+    // Traducir mensajes de alerta
+    if (!name.trim()) { alert("Please enter a name for the rule"); return; }
+    if (conditions.some(c => !c.value.trim())) { alert("Please complete all condition values"); return; }
+    if (assignType === "team" && !selectedTeam) { alert("Please select a team to assign"); return; }
+    if (assignType === "agent" && selectedAgents.length === 0) { alert("Please select agents to assign"); return; }
+    if (assignType === "team" && assignToSpecific && !specificAgent) { alert("Please select a specific agent"); return; }
 
     const finalAssignValue = assignType === "team" ? selectedTeam : selectedAgents.join(", ")
 
@@ -316,7 +280,6 @@ const RoutingConditionForm = ({ isOpen, onClose, onSave, editingCondition = null
       assignValue: finalAssignValue,
       specificAgent: assignToSpecific ? specificAgent : null,
     })
-
     onClose()
   }
 
@@ -324,17 +287,15 @@ const RoutingConditionForm = ({ isOpen, onClose, onSave, editingCondition = null
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingCondition ? "Editar regla" : "Crear nueva regla"}</DialogTitle>
-          <DialogDescription>
-            Define las condiciones y asignación para esta regla
-          </DialogDescription>
+          <DialogTitle>{editingCondition ? "Edit rule" : "Create new rule"}</DialogTitle>
+          <DialogDescription>Define the conditions and assignment for this rule</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label>Nombre de la regla</Label>
+            <Label>Rule name</Label>
             <Input
-              placeholder="Ej: Tickets de soporte técnico"
+              placeholder="Ex: Technical support tickets"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -345,49 +306,34 @@ const RoutingConditionForm = ({ isOpen, onClose, onSave, editingCondition = null
               <div key={index} className="flex items-center gap-2 bg-white p-3 rounded-md">
                 {index > 0 && (
                   <div className="flex items-center gap-2 -ml-2">
-                    <Select
-                      value={combinator}
-                      onValueChange={(value: "AND" | "OR") => setCombinator(value)}
-                    >
-                      <SelectTrigger className="w-[80px] bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Select value={combinator} onValueChange={(value: "AND" | "OR") => setCombinator(value)}>
+                      <SelectTrigger className="w-[80px] bg-white"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="AND">Y</SelectItem>
-                        <SelectItem value="OR">O</SelectItem>
+                        <SelectItem value="AND">AND</SelectItem>
+                        <SelectItem value="OR">OR</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
-                <Select 
-                  value={condition.type} 
-                  onValueChange={(value) => updateCondition(index, "type", value)}
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="message">Mensaje</SelectItem>
-                    <SelectItem value="tags">Etiquetas</SelectItem>
-                    <SelectItem value="topics">Temas</SelectItem>
-                    <SelectItem value="country">País</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                        <Select 
-                  value={condition.operator} 
-                  onValueChange={(value) => updateCondition(index, "operator", value)}
-                >
-                  <SelectTrigger className="w-[150px]">
-                            <SelectValue />
-                          </SelectTrigger>
+                <Select value={condition.type} onValueChange={(value) => updateCondition(index, "type", value)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                    <SelectItem value="contains">Contiene</SelectItem>
-                    <SelectItem value="equals">Es igual a</SelectItem>
-                    <SelectItem value="not_contains">No contiene</SelectItem>
+                    <SelectItem value="message">Message</SelectItem>
+                            <SelectItem value="tags">Tags</SelectItem>
+                    <SelectItem value="topics">Topics</SelectItem>
+                    <SelectItem value="country">Country</SelectItem>
                           </SelectContent>
                         </Select>
+
+                <Select value={condition.operator} onValueChange={(value) => updateCondition(index, "operator", value)}>
+                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="contains">Contains</SelectItem>
+                    <SelectItem value="equals">Is equal to</SelectItem>
+                    <SelectItem value="not_contains">Does not contain</SelectItem>
+                  </SelectContent>
+                </Select>
 
                 {condition.type === "tags" && (
                   <div className="flex-1">
@@ -436,158 +382,92 @@ const RoutingConditionForm = ({ isOpen, onClose, onSave, editingCondition = null
                       )}
                       
                 {condition.type === "country" && (
-                  <Select 
-                    value={condition.value} 
-                    onValueChange={(value) => updateCondition(index, "value", value)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecciona un país" />
-                            </SelectTrigger>
-                    <SelectContent>
-                              {SAMPLE_COUNTRIES.map((country) => (
-                                <SelectItem key={country} value={country}>
-                                  {country}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                  <Select value={condition.value} onValueChange={(value) => updateCondition(index, "value", value)}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Select a country" /></SelectTrigger>
+                    <SelectContent>{SAMPLE_COUNTRIES.map((country) => <SelectItem key={country} value={country}>{country}</SelectItem>)}</SelectContent>
+                  </Select>
                 )}
 
                 {condition.type === "message" && (
                   <Input
                     className="flex-1"
-                    placeholder="Escribe el texto a buscar"
+                    placeholder="Enter the text to search for"
                     value={condition.value}
                     onChange={(e) => updateCondition(index, "value", e.target.value)}
                   />
                 )}
 
-                {conditions.length > 1 && (
-                        <Button 
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeCondition(index)}
-                    className="h-8 w-8 text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                        </Button>
-                )}
-                    </div>
+                {conditions.length > 1 && <Button variant="ghost" size="icon" onClick={() => removeCondition(index)}><Trash2 /></Button>}
+                        </div>
             ))}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addCondition}
-              className="text-purple-600 border-purple-200 hover:bg-purple-50"
-            >
+            <Button variant="outline" size="sm" onClick={addCondition} className="text-purple-600 border-purple-200 hover:bg-purple-50">
               <Plus className="h-4 w-4 mr-2" />
-              Agregar condición
-            </Button>
-                  </div>
-
+              Add condition
+                        </Button>
+                      </div>
+                
           <div className="space-y-4 pt-4 border-t">
-            <div className="space-y-2">
-              <Label>Asignar a</Label>
-              <RadioGroup
-                value={assignType}
-                onValueChange={setAssignType}
-                className="flex gap-4"
-              >
+                  <div className="space-y-2">
+              <Label>Assign to</Label>
+              <RadioGroup value={assignType} onValueChange={setAssignType} className="flex gap-4">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="team" id="team" />
-                  <Label htmlFor="team">Equipo</Label>
-                </div>
+                  <Label htmlFor="team">Team</Label>
+                    </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="agent" id="agent" />
-                  <Label htmlFor="agent">Agente específico</Label>
-                </div>
+                  <Label htmlFor="agent">Specific agent</Label>
+                  </div>
               </RadioGroup>
-            </div>
+                  </div>
 
             {assignType === "team" && (
               <div className="space-y-2">
-                <Label>Selecciona equipo</Label>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un equipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SAMPLE_TEAMS.map((team) => (
-                        <SelectItem key={team} value={team}>
-                          {team}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                    id="assignToSpecific"
-                        checked={assignToSpecific}
-                    onCheckedChange={(checked) => setAssignToSpecific(checked === true)}
-                      />
-                  <Label htmlFor="assignToSpecific">Asignar a un agente específico</Label>
-                    </div>
-
-                    {assignToSpecific && (
-                  <div className="space-y-2">
-                    <Label>Selecciona agente</Label>
+                <Label>Select team</Label>
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger><SelectValue placeholder="Select a team" /></SelectTrigger>
+                  <SelectContent>{SAMPLE_TEAMS.map((team) => <SelectItem key={team} value={team}>{team}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="assignToSpecific" checked={assignToSpecific} onCheckedChange={(checked) => setAssignToSpecific(checked === true)} />
+                  <Label htmlFor="assignToSpecific">Assign to a specific agent</Label>
+              </div>
+                {assignToSpecific && (
+              <div className="space-y-2">
+                    <Label>Select agent</Label>
                     <Select value={specificAgent} onValueChange={setSpecificAgent}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un agente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredAgents.map((agent) => (
-                            <SelectItem key={agent.id} value={agent.name}>
-                              {agent.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <SelectTrigger><SelectValue placeholder="Select an agent" /></SelectTrigger>
+                      <SelectContent>{filteredAgents.map((agent) => <SelectItem key={agent.id} value={agent.name}>{agent.name}</SelectItem>)}</SelectContent>
+                </Select>
                   </div>
                 )}
               </div>
             )}
 
             {assignType === "agent" && (
-              <div className="space-y-2">
-                <Label>Selecciona agentes</Label>
-                <div className="flex flex-wrap gap-2">
-                  {filteredAgents.map((agent) => (
-                    <Badge
-                      key={agent.id}
-                      variant={selectedAgents.includes(agent.name) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        if (selectedAgents.includes(agent.name)) {
-                          setSelectedAgents(selectedAgents.filter((name) => name !== agent.name))
-                        } else {
-                          setSelectedAgents([...selectedAgents, agent.name])
-                        }
-                      }}
-                    >
-                          {agent.name}
-                    </Badge>
-                  ))}
+            <div className="space-y-2">
+                <Label>Select agents</Label>
+                <div className="flex flex-wrap gap-2">{filteredAgents.map((agent) => <Badge key={agent.id} variant={selectedAgents.includes(agent.name) ? "default" : "outline"} onClick={() => {
+                  if (selectedAgents.includes(agent.name)) {
+                    setSelectedAgents(selectedAgents.filter((name) => name !== agent.name))
+                  } else {
+                    setSelectedAgents([...selectedAgents, agent.name])
+                  }
+                }}>{agent.name}</Badge>)}</div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave}>
-            {editingCondition ? "Guardar cambios" : "Crear regla"}
-          </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>{editingCondition ? "Save changes" : "Create rule"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
-}
+};
 
 interface AgentDistribution {
   agent: string;
@@ -639,7 +519,7 @@ interface CheckboxChangeHandler {
   (checked: boolean | "indeterminate"): void;
 }
 
-// Actualizar el componente ConditionItem
+// Update ConditionItem component
 const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle }: ConditionItemProps) => {
   const toggleAIPersonalization = () => {
     const newConditions = [...conditions];
@@ -649,6 +529,33 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
     };
     setConditions(newConditions);
   };
+
+  const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (condition.id === "ticketLimits") {
+          const newConditions = [...conditions];
+          const currentCondition = newConditions[index] as TicketLimitCondition;
+          const value = Math.max(
+              currentCondition.min || 1,
+              Math.min(currentCondition.max || 50, Number.parseInt(e.target.value) || currentCondition.min)
+          );
+          newConditions[index] = {
+              ...currentCondition,
+              limit: value
+          };
+          setConditions(newConditions);
+      }
+  };
+
+  const handleRandomAssignChange = (checked: boolean | 'indeterminate') => {
+    if (condition.id === "ticketLimits") {
+        const newConditions = [...conditions];
+        newConditions[index] = {
+            ...newConditions[index],
+            randomAssign: checked === true
+        } as TicketLimitCondition;
+        setConditions(newConditions);
+    }
+};
 
   return (
     <div className="p-4 mb-4 bg-white rounded-md border flex flex-col gap-4 relative hover:border-purple-200 transition-colors">
@@ -684,20 +591,20 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
           {condition.id === "online" && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Los tickets solo se asignarán a agentes que estén en línea y disponibles para atender consultas.
+                Tickets will only be assigned to agents who are online and available to handle inquiries.
               </p>
               <div className="flex items-center space-x-2 bg-muted/20 p-3 rounded">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    <span className="text-sm font-medium">Agentes en línea: {condition.activeAgents}/{condition.totalAgents}</span>
-            </div>
+                    <span className="text-sm font-medium">Online agents: {(condition as OnlineCondition).activeAgents}/{(condition as OnlineCondition).totalAgents}</span>
+                  </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${(condition.activeAgents / condition.totalAgents) * 100}%` }}
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: `${((condition as OnlineCondition).activeAgents / (condition as OnlineCondition).totalAgents) * 100}%` }}
                     ></div>
-          </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -706,7 +613,7 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
           {condition.id === "businessHours" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {Object.entries(condition.hours || {}).map(([day, hours]) => (
+                {Object.entries((condition as BusinessHoursCondition).hours || {}).map(([day, hours]) => (
                   <div key={day} className="space-y-2 bg-muted/10 p-3 rounded-md">
                     <div className="flex items-center justify-between">
                       <Label className="font-medium capitalize">{day}</Label>
@@ -737,14 +644,14 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                           }}
                         >
                           <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Inicio" />
+                            <SelectValue placeholder="Start" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 24 }, (_, i) => 
+                            {Array.from({ length: 24 }, (_, i) => (
                               <SelectItem key={i} value={`${i.toString().padStart(2, "0")}:00`}>
                                 {`${i.toString().padStart(2, "0")}:00`}
                               </SelectItem>
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                         <Select
@@ -758,27 +665,27 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                           }}
                         >
                           <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Fin" />
+                            <SelectValue placeholder="End" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 24 }, (_, i) => 
+                            {Array.from({ length: 24 }, (_, i) => (
                               <SelectItem key={i} value={`${i.toString().padStart(2, "0")}:00`}>
                                 {`${i.toString().padStart(2, "0")}:00`}
                               </SelectItem>
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                     )}
-                </div>
-              ))}
+                  </div>
+                ))}
               </div>
               <div className="flex items-center gap-2 bg-muted/20 p-3 rounded">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span className="text-sm">Zona horaria: {condition.timezone}</span>
+                <span className="text-sm">Timezone: {(condition as BusinessHoursCondition).timezone}</span>
               </div>
             </div>
           )}
@@ -787,23 +694,12 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label>Límite de tickets por agente</Label>
+                  <Label>Ticket limit per agent</Label>
                   <div className="flex items-center gap-2">
-              <Input
-                type="number"
+                    <Input
+                      type="number"
                       value={(condition as TicketLimitCondition).limit}
-                onChange={(e) => {
-                        const newConditions = [...conditions];
-                        const value = Math.max(
-                          (condition as TicketLimitCondition).min || 1,
-                          Math.min((condition as TicketLimitCondition).max || 50, Number.parseInt(e.target.value))
-                        );
-                        newConditions[index] = {
-                          ...newConditions[index],
-                          limit: value
-                        } as TicketLimitCondition;
-                        setConditions(newConditions);
-                      }}
+                      onChange={handleLimitChange}
                       min={(condition as TicketLimitCondition).min}
                       max={(condition as TicketLimitCondition).max}
                       className="w-24"
@@ -813,7 +709,7 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                 </div>
                 <div className="flex-1">
                   <div className="bg-muted/20 p-3 rounded-md space-y-2">
-                    <p className="text-sm font-medium">Distribución actual:</p>
+                    <p className="text-sm font-medium">Current distribution:</p>
                     <div className="space-y-2">
                       {(condition as TicketLimitCondition).currentDistribution?.map((agent: AgentDistribution) => (
                         <div key={agent.agent} className="space-y-1">
@@ -822,7 +718,7 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                             <span className="font-medium">{agent.current}/{agent.max}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div 
+                            <div
                               className={`h-1.5 rounded-full ${
                                 agent.current / agent.max > 0.8 ? 'bg-red-500' :
                                 agent.current / agent.max > 0.6 ? 'bg-yellow-500' :
@@ -842,22 +738,15 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                 <Checkbox
                   id={`random-assign-${condition.id}`}
                   checked={(condition as TicketLimitCondition).randomAssign || false}
-                  onCheckedChange={(checked) => {
-                    const newConditions = [...conditions];
-                    newConditions[index] = {
-                      ...newConditions[index],
-                      randomAssign: checked === true
-                    } as TicketLimitCondition;
-                    setConditions(newConditions);
-                  }}
+                  onCheckedChange={handleRandomAssignChange}
                   className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                 />
                 <div>
                   <Label htmlFor={`random-assign-${condition.id}`} className="font-medium">
-                    Asignar aleatoriamente a otro agente si se alcanza el límite
+                    Randomly assign to another agent if the limit is reached
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Se respetarán otras condiciones activas como horario de atención y agentes en línea
+                    Other active conditions such as business hours and online agents will be respected
                   </p>
                 </div>
               </div>
@@ -867,7 +756,7 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
           <div className="space-y-1 pt-4 border-t">
             <div className="flex items-center justify-between mb-2">
               <Label className="text-sm text-muted-foreground">
-                Mensaje que aparecerá si el routing falla por esta condición
+                Message that will appear if routing fails due to this condition
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -883,15 +772,15 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                       onClick={toggleAIPersonalization}
                     >
                       <Sparkles className={`h-4 w-4 mr-2 ${condition.useAIPersonalization ? "text-white" : "text-purple-600"}`} />
-                      {condition.useAIPersonalization ? "IA Activada" : "Personalizar con IA"}
+                      {condition.useAIPersonalization ? "AI Active" : "Personalize with AI"}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Al activar la IA, el mensaje se personalizará automáticamente para cada cliente basándose en su contexto y la conversación</p>
+                    <p>By activating the AI, the message will be automatically personalized for each client based on their context and the conversation.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-        </div>
+            </div>
             <div className="flex gap-2">
               <Input
                 value={condition.fallback}
@@ -900,30 +789,30 @@ const ConditionItem = ({ condition, index, conditions, setConditions, dragHandle
                   newConditions[index].fallback = e.target.value;
                   setConditions(newConditions);
                 }}
-                placeholder={condition.useAIPersonalization ? "La IA personalizará este mensaje para cada cliente" : "Mensaje de fallback"}
-                className="w-full"
-              />
-            </div>
+                placeholder={condition.useAIPersonalization ? "AI will personalize this message for each client" : "Fallback message"}
+                    className="w-full"
+                  />
+                </div>
             {condition.useAIPersonalization && (
               <p className="text-sm text-purple-600 mt-2">
                 <div className="flex items-center mb-2">
                   <Sparkles className="h-4 w-4 mr-2" />
-                  <span>La IA adaptará este mensaje base según:</span>
-                </div>
+                  <span>The AI will adapt this base message based on:</span>
+            </div>
                 <ul className="list-disc pl-8 mt-1 space-y-1">
-                  <li>El contexto de la conversación</li>
-                  <li>El historial del cliente</li>
-                  <li>El motivo específico de la asignación</li>
-                  <li>El tono y sentimiento del cliente</li>
+                  <li>Conversation context</li>
+                  <li>Customer history</li>
+                  <li>Specific assignment reason</li>
+                  <li>Customer tone and sentiment</li>
                 </ul>
               </p>
+            )}
+          </div>
+        </div> // Closes conditional rendering div (if condition.enabled)
       )}
-    </div>
-        </div>
-      )}
-    </div>
-  );
-};
+    </div> // Closes main component wrapper div
+  ); // Closes return statement
+}; // Correctly closes ConditionItem component function
 
 interface AIRoutingSettings {
   csatWeight: number;
@@ -980,8 +869,8 @@ const SuccessMessageSection = ({
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between">
-        <div>
-          <Label className="font-medium text-base">Mensaje de asignación exitosa:</Label>
+                <div>
+          <Label className="font-medium text-base">Successful assignment message:</Label>
           <p className="text-sm text-muted-foreground">
             {agentHandover ? (
               <span className="flex items-center text-amber-700">
@@ -990,24 +879,24 @@ const SuccessMessageSection = ({
                   <path d="M12 16h.01"></path>
                   <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z"></path>
                 </svg>
-                Se usará el mensaje de Agent Handover porque está activado en la configuración
+                Agent Handover message will be used because it's enabled in settings
                 <Button
                   variant="link"
                   className="text-purple-600 px-2 h-auto"
                   onClick={() => setShowHandoverMessage(!showHandoverMessage)}
                 >
-                  {showHandoverMessage ? "Ocultar mensaje" : "Ver mensaje"}
+                  {showHandoverMessage ? "Hide message" : "View message"}
                 </Button>
               </span>
             ) : (
-              `Este mensaje se mostrará cuando un ticket sea asignado correctamente ${
-                routingType === "manual" ? "según las condiciones configuradas" :
-                routingType === "roundRobin" ? "mediante round robin" :
-                routingType === "ai" ? "por el sistema de IA" : ""
+              `This message will be shown when a ticket is successfully assigned ${
+                routingType === "manual" ? "according to the configured conditions" :
+                routingType === "roundRobin" ? "via round robin" :
+                routingType === "ai" ? "by the AI system" : ""
               }.`
             )}
-          </p>
-        </div>
+                  </p>
+                </div>
         {!agentHandover && (
           <TooltipProvider>
             <Tooltip>
@@ -1026,42 +915,42 @@ const SuccessMessageSection = ({
                   }))}
                 >
                   <Sparkles className={`h-4 w-4 mr-2 ${useAIPersonalization ? "text-white" : "text-purple-600"}`} />
-                  {useAIPersonalization ? "IA Activada" : "Personalizar con IA"}
+                  {useAIPersonalization ? "AI Active" : "Personalize with AI"}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Al activar la IA, el mensaje se personalizará automáticamente para cada cliente basándose en su contexto y la conversación</p>
+                <p>When AI is active, the message will be automatically personalized for each customer based on context and conversation.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
-      </div>
+              </div>
 
       {showHandoverMessage && agentHandover && (
         <div className="bg-muted p-3 rounded-md">
-          <p className="text-sm font-medium mb-1">Mensaje de Agent Handover:</p>
+          <p className="text-sm font-medium mb-1">Agent Handover Message:</p>
           <p className="text-sm">{handoverMessage}</p>
-        </div>
-      )}
+            </div>
+          )}
       
       <Textarea 
         value={message}
         onChange={handleMessageChange}
         className="min-h-[100px]"
-        placeholder={useAIPersonalization ? "La IA personalizará este mensaje para cada cliente" : "Mensaje de asignación exitosa"}
+        placeholder={useAIPersonalization ? "AI will personalize this message for each customer" : "Successful assignment message"}
         disabled={agentHandover}
       />
       {useAIPersonalization && !agentHandover && (
         <div className="text-sm text-purple-600 mt-2">
           <div className="flex items-center mb-2">
             <Sparkles className="h-4 w-4 mr-2" />
-            <span>La IA adaptará este mensaje base según:</span>
+            <span>The AI will adapt this base message based on:</span>
           </div>
           <ul className="list-disc pl-8 mt-1 space-y-1">
-            <li>El contexto de la conversación</li>
-            <li>El historial del cliente</li>
-            <li>El motivo específico de la asignación</li>
-            <li>El tono y sentimiento del cliente</li>
+            <li>Conversation context</li>
+            <li>Customer history</li>
+            <li>Specific assignment reason</li>
+            <li>Customer tone and sentiment</li>
           </ul>
         </div>
       )}
@@ -1117,20 +1006,20 @@ export default function InboxSettings() {
   const [routingConditions, setRoutingConditions] = useState<RoutingCondition[]>([
     {
       id: 1,
-      name: "Devolución, Reembolso",
+      name: "Return, Refund",
       conditionType: "tags",
-      conditionValue: "Devolución, Reembolso",
+      conditionValue: "Return, Refund",
       subconditions: null,
       operator: null,
       assignType: "team",
-      assignValue: "Devoluciones",
+      assignValue: "Returns",
       specificAgent: null,
     },
     {
       id: 2,
-      name: "México",
+      name: "Mexico",
       conditionType: "country",
-      conditionValue: "México",
+      conditionValue: "Mexico",
       subconditions: null,
       operator: null,
       assignType: "agent",
@@ -1139,16 +1028,16 @@ export default function InboxSettings() {
     },
     {
       id: 3,
-      name: "Soporte, Técnico",
+      name: "Support, Technical",
       conditionType: "compound",
       conditionValue: "",
       subconditions: [
-        { conditionType: "tags", conditionValue: "Soporte, Técnico" },
-        { conditionType: "country", conditionValue: "España" }
+        { conditionType: "tags", conditionValue: "Support, Technical" },
+        { conditionType: "country", conditionValue: "Spain" }
       ],
       operator: "AND",
       assignType: "team",
-      assignValue: "Soporte Técnico",
+      assignValue: "Technical Support",
       specificAgent: "Carlos López"
     }
   ])
@@ -1157,7 +1046,7 @@ export default function InboxSettings() {
 
   // Agregar un nuevo estado para el mensaje de routing exitoso
   const [successRoutingMessage, setSuccessRoutingMessage] = useState(
-    "Tu mensaje ha sido recibido. Un agente te atenderá pronto.",
+    "Your message has been received. An agent will assist you shortly.",
   )
 
   // Estado para AI Routing Options
@@ -1166,38 +1055,45 @@ export default function InboxSettings() {
   const [historyEnabled, setHistoryEnabled] = useState(false)
   const [sentimentEnabled, setSentimentEnabled] = useState(false)
 
+  // NUEVOS ESTADOS para configuración adicional de IA
+  const [isEquitableDistributionEnabled, setIsEquitableDistributionEnabled] = useState(false);
+  const [isPreAssignmentEnabled, setIsPreAssignmentEnabled] = useState(false);
+  const [preAssignmentThreshold, setPreAssignmentThreshold] = useState(3);
+  const [preAssignmentTimer, setPreAssignmentTimer] = useState("5"); // Value in minutes as string
+  const [insufficientInfoHandling, setInsufficientInfoHandling] = useState<"queue" | "roundRobin">("queue"); // NUEVO ESTADO
+
   // Estado para Condiciones Generales
   const [conditionsEnabled, setConditionsEnabled] = useState(false)
   const [conditions, setConditions] = useState<GeneralConditionType[]>([
     {
       id: "online",
-      name: "Agentes en línea",
+      name: "Online Agents",
       enabled: false,
-      fallback: "Lo siento, todos nuestros agentes están ocupados en este momento. Tu consulta será atendida tan pronto como un agente esté disponible.",
+      fallback: "Sorry, all our agents are busy right now. Your query will be attended to as soon as an agent becomes available.",
       activeAgents: 5,
       totalAgents: 8
     } as OnlineCondition,
     {
       id: "businessHours",
-      name: "Horario de atención",
+      name: "Business Hours",
       enabled: false,
-      fallback: "Nuestro horario de atención ha finalizado. Te atenderemos en cuanto iniciemos operaciones.",
+      fallback: "Our business hours have ended. We will attend to you as soon as we resume operations.",
       hours: {
-        lunes: "09:00-17:00",
-        martes: "09:00-17:00",
-        miercoles: "09:00-17:00",
-        jueves: "09:00-17:00",
-        viernes: "09:00-17:00",
-        sabado: "",
-        domingo: "",
+        monday: "09:00-17:00",
+        tuesday: "09:00-17:00",
+        wednesday: "09:00-17:00",
+        thursday: "09:00-17:00",
+        friday: "09:00-17:00",
+        saturday: "",
+        sunday: "",
       },
       timezone: "America/Mexico_City"
     },
     {
       id: "ticketLimits",
-      name: "Límites de tickets",
+      name: "Ticket Limits",
       enabled: false,
-      fallback: "Nuestros agentes están manejando el máximo de tickets permitido. Tu consulta será atendida pronto.",
+      fallback: "Our agents are handling the maximum allowed tickets. Your query will be attended to shortly.",
       limit: 10,
       min: 1,
       max: 50,
@@ -1227,18 +1123,18 @@ export default function InboxSettings() {
     useAgents: false,
     selectedAgents: [],
     useAIPersonalization: false,
-    successMessage: "Tu consulta ha sido asignada. Un agente te atenderá en breve."
+    successMessage: "Your query has been assigned. An agent will attend to you shortly."
   });
 
   // Estados para mensajes de éxito
   const [manualRoutingSettings, setManualRoutingSettings] = useState({
     useAIPersonalization: false,
-    successMessage: "Tu consulta ha sido asignada según nuestros criterios. Un agente te atenderá en breve."
+    successMessage: "Your query has been assigned according to our criteria. An agent will attend to you shortly."
   });
 
   const [aiRoutingSettings, setAiRoutingSettings] = useState({
     useAIPersonalization: false,
-    successMessage: "¡Buenas noticias! Hemos encontrado el agente ideal para ayudarte. Te atenderá en breve."
+    successMessage: "Good news! We have found the ideal agent to help you. They will attend to you shortly."
   });
 
   // Agregar estado para IA en Agent Handover
@@ -1279,7 +1175,7 @@ export default function InboxSettings() {
     )
 
     if (isDuplicate) {
-      alert("Ya existe una condición con los mismos criterios")
+      alert("A condition with the same criteria already exists")
       return
     }
 
@@ -1388,9 +1284,9 @@ export default function InboxSettings() {
                 </svg>
               </Button>
             <div>
-              <h2 className="text-xl font-semibold">Transferencia de Sofia AI a Agente</h2>
+              <h2 className="text-xl font-semibold">Sofia AI to Agent Handover</h2>
               <p className="text-muted-foreground mt-1">
-                Elige cuándo Sofia AI debería transferir la conversación a un humano real.
+                Choose when Sofia AI should transfer the conversation to a real human.
               </p>
             </div>
             </div>
@@ -1402,11 +1298,11 @@ export default function InboxSettings() {
                   onClick={() => handleSaveChanges('agentHandover')}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
-                  Guardar cambios
+                  Save Changes
                 </Button>
               )}
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Activado</span>
+              <span className="text-sm font-medium">Enabled</span>
               <Switch
                 id="agent-handover"
                 checked={agentHandover}
@@ -1432,7 +1328,7 @@ export default function InboxSettings() {
                   />
                   <div>
                     <Label htmlFor="explicit-request" className="font-medium">
-                      Cuando el cliente explícitamente pide hablar con un agente
+                      When the client explicitly asks to speak with an agent
                     </Label>
                   </div>
                 </div>
@@ -1446,7 +1342,7 @@ export default function InboxSettings() {
                   />
                   <div>
                     <Label htmlFor="cannot-answer" className="font-medium">
-                      Cuando Sofia AI no puede responder una pregunta.
+                      When Sofia AI cannot answer a question.
                     </Label>
                   </div>
                 </div>
@@ -1460,7 +1356,7 @@ export default function InboxSettings() {
                   />
                   <div>
                     <Label htmlFor="negative-sentiment" className="font-medium">
-                      Cuando el sentimiento del cliente es 😞 Negativo
+                      When the client's sentiment is 😞 Negative
                     </Label>
                   </div>
                 </div>
@@ -1474,18 +1370,18 @@ export default function InboxSettings() {
                   />
                   <div className="w-full">
                     <Label htmlFor="keywords" className="font-medium">
-                      Cuando el cliente menciona ciertas palabras clave o temas
+                      When the client mentions certain keywords or topics
                     </Label>
                     <div className="mt-2">
                       <Textarea
-                        placeholder="Ingresa palabras clave o temas"
+                        placeholder="Enter keywords or topics"
                         className="min-h-[100px]"
                         value={keywords}
-                        onChange={(e) => setKeywords(e.target.value)}
+                        onChange={(e) => { setKeywords(e.target.value); handleSectionChange('agentHandover'); }}
                         disabled={!keywordsEnabled}
                       />
                       <p className="text-sm text-muted-foreground mt-1">
-                        Separa tus palabras clave y temas con comas ","
+                        Separate your keywords and topics with commas ","
                       </p>
                     </div>
                   </div>
@@ -1494,7 +1390,7 @@ export default function InboxSettings() {
 
               <div className="space-y-2 pt-4 border-t">
                 <div className="flex items-center justify-between">
-                  <Label className="font-medium text-base">Mensaje de entrega personalizado:</Label>
+                  <Label className="font-medium text-base">Custom delivery message:</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1512,38 +1408,35 @@ export default function InboxSettings() {
                           })}
                         >
                           <Sparkles className={`h-4 w-4 mr-2 ${handoverAISettings.useAIPersonalization ? "text-white" : "text-purple-600"}`} />
-                          {handoverAISettings.useAIPersonalization ? "IA Activada" : "Personalizar con IA"}
+                          {handoverAISettings.useAIPersonalization ? "IA Activada" : "Personalize with AI"}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Al activar la IA, el mensaje se personalizará automáticamente para cada cliente basándose en su contexto y la conversación</p>
+                        <p>When AI is active, the message will be automatically personalized for each customer based on context and conversation.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Sofia transferirá la conversación a un agente cuando tus clientes deseen interactuar con un humano real.
+                  Sofia will transfer the conversation to an agent when your clients want to interact with a real human.
                 </p>
                 <Textarea
                   value={handoverAISettings.handoverMessage}
-                  onChange={(e) => setHandoverAISettings({
-                    ...handoverAISettings,
-                    handoverMessage: e.target.value
-                  })}
+                  onChange={(e) => { setHandoverAISettings(prev => ({...prev, handoverMessage: e.target.value})); handleSectionChange('agentHandover'); }}
                   className="min-h-[100px] mt-2"
-                  placeholder={handoverAISettings.useAIPersonalization ? "La IA personalizará este mensaje para cada cliente" : "Mensaje de handover"}
+                  placeholder={handoverAISettings.useAIPersonalization ? "AI will personalize this message for each customer" : "Handover message"}
                 />
                 {handoverAISettings.useAIPersonalization && (
                   <p className="text-sm text-purple-600 mt-2">
                     <div className="flex items-center mb-2">
                       <Sparkles className="h-4 w-4 mr-2" />
-                      <span>La IA adaptará este mensaje base según:</span>
+                      <span>The AI will adapt this base message based on:</span>
                     </div>
                     <ul className="list-disc pl-8 mt-1 space-y-1">
-                      <li>El contexto de la conversación</li>
-                      <li>El historial del cliente</li>
-                      <li>El motivo específico de la transferencia</li>
-                      <li>El tono y sentimiento del cliente</li>
+                      <li>Conversation context</li>
+                      <li>Customer history</li>
+                      <li>Specific transfer reason</li>
+                      <li>Customer tone and sentiment</li>
                     </ul>
                   </p>
                 )}
@@ -1580,10 +1473,8 @@ export default function InboxSettings() {
                 </svg>
               </Button>
             <div>
-              <h2 className="text-xl font-semibold">Tipo de Routing</h2>
-                <p className="text-muted-foreground mt-1">
-                  Configura cómo se asignarán los tickets a los agentes.
-                </p>
+              <h2 className="text-xl font-semibold">Routing Type</h2>
+                <p className="text-muted-foreground mt-1">Configure how tickets will be assigned to agents.</p>
             </div>
             </div>
             <div className="flex items-center gap-4">
@@ -1594,11 +1485,11 @@ export default function InboxSettings() {
                   onClick={() => handleSaveChanges('routingType')}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
-                  Guardar cambios
+                  Save Changes
                 </Button>
               )}
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Activado</span>
+              <span className="text-sm font-medium">Enabled</span>
               <Switch
                 id="routing-enabled"
                 checked={routingEnabled}
@@ -1612,21 +1503,21 @@ export default function InboxSettings() {
             </div>
           </div>
 
-          {expandedSections.routingType && (
+          {expandedSections.routingType && routingEnabled && (
             <div className="mt-6 space-y-6">
               <div>
                 <Label htmlFor="routing-type" className="font-medium">
-                  Selecciona el tipo de routing:
+                  Select the routing type:
                 </Label>
-                <Select value={routingType} onValueChange={setRoutingType}>
+                <Select value={routingType} onValueChange={(v) => { setRoutingType(v); handleSectionChange('routingType'); }}>
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Seleccionar tipo" />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Seleccionar tipo</SelectItem>
+                    <SelectItem value="none">Select type</SelectItem>
                     <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="roundRobin">Round Robin</SelectItem>
-                    <SelectItem value="ai">Con IA</SelectItem>
+                    <SelectItem value="ai">With AI</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1634,22 +1525,20 @@ export default function InboxSettings() {
               {routingType === "manual" && (
                 <div className="space-y-6 pl-4 border-l-2 border-purple-100">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-base font-medium">Condiciones de asignación</h3>
+                    <h3 className="text-base font-medium">Assign conditions</h3>
                     <Button onClick={handleAddCondition} className="bg-purple-600 hover:bg-purple-700" size="sm">
                       <Plus className="h-4 w-4 mr-2" />
-                      Crear nueva condición
+                      Create new condition
                     </Button>
                   </div>
 
                   {routingConditions.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full">
+                    <Accordion type="single" collapsible className="w-full" defaultValue="conditions">
                       <AccordionItem value="conditions">
-                        <AccordionTrigger className="py-2">
-                          <span className="text-sm font-medium">
-                            {routingConditions.length} {routingConditions.length === 1 ? "condición" : "condiciones"}{" "}
-                            configuradas
-                          </span>
-                        </AccordionTrigger>
+                        <AccordionTrigger className="py-2"><span className="text-sm font-medium">
+                          {routingConditions.length} {routingConditions.length === 1 ? "condition" : "conditions"}{" "}
+                          configured
+                        </span></AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-1 pt-2">
                             {routingConditions.map((condition) => (
@@ -1666,10 +1555,8 @@ export default function InboxSettings() {
                     </Accordion>
                   ) : (
                     <div className="text-center py-6 bg-muted/20 rounded-md">
-                      <p className="text-muted-foreground">No hay condiciones configuradas</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Crea una nueva condición para definir cómo asignar tickets
-                      </p>
+                      <p className="text-muted-foreground">No conditions configured</p>
+                      <p className="text-sm text-muted-foreground mt-1">Create a new condition to define how tickets will be assigned</p>
                     </div>
                   )}
 
@@ -1697,7 +1584,7 @@ export default function InboxSettings() {
                       <div>
                         <p className="font-medium text-purple-800">Round Robin</p>
                         <p className="text-purple-700 text-sm">
-                          Asignación equitativa y rotativa entre los agentes o equipos seleccionados.
+                          Tickets will be evenly distributed between the selected agents or teams.
                         </p>
                       </div>
                     </div>
@@ -1718,12 +1605,12 @@ export default function InboxSettings() {
                           }}
                           className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                         />
-                        <Label htmlFor="useTeams">Incluir equipos</Label>
+                        <Label htmlFor="useTeams">Include teams</Label>
                       </div>
 
                       {roundRobinSettings.useTeams && (
                         <div className="pl-6 space-y-2">
-                          <Label className="text-sm">Selecciona los equipos</Label>
+                          <Label className="text-sm">Select teams</Label>
                           <div className="flex flex-wrap gap-2">
                             {SAMPLE_TEAMS.map((team) => (
                               <Badge
@@ -1759,12 +1646,12 @@ export default function InboxSettings() {
                           }}
                           className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                         />
-                        <Label htmlFor="useAgents">Incluir agentes específicos</Label>
+                        <Label htmlFor="useAgents">Include specific agents</Label>
                       </div>
 
                       {roundRobinSettings.useAgents && (
                         <div className="pl-6 space-y-2">
-                          <Label className="text-sm">Selecciona los agentes</Label>
+                          <Label className="text-sm">Select agents</Label>
                           <div className="flex flex-wrap gap-2">
                             {SAMPLE_AGENTS.map((agent) => (
                               <Badge
@@ -1808,17 +1695,28 @@ export default function InboxSettings() {
                         </svg>
                       </div>
                       <div>
-                        <p className="font-medium text-purple-800">Routing Inteligente</p>
+                        <p className="font-medium text-purple-800">Intelligent Routing</p>
                         <p className="text-purple-700 text-sm">
-                          El sistema utilizará IA para asignar tickets basándose en múltiples factores y sus pesos relativos.
+                          The system will use AI to assign tickets based on multiple factors and their relative weights.
                         </p>
                       </div>
                     </div>
                   </div>
 
+                  {/* NUEVO BLOQUE INFORMATIVO */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
+                    <p className="font-medium mb-2">How AI Routing Works:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>The AI uses Natural Language Processing (NLP) to analyze the ticket content (initial message or AI bot suggestion, if active).</li>
+                      <li>It attempts to match the ticket with a team based on the created team descriptions (e.g., "Logistics Team: Handles delivery issues").</li>
+                      <li>If no teams are created: The AI uses user tags (e.g., "VIP Client") and ticket topics (e.g., "Delivery Issues") assigned to agents to determine the most suitable team or agent.</li>
+                    </ul>
+                  </div>
+                  {/* FIN NUEVO BLOQUE INFORMATIVO */}
+
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-base font-medium mb-4">Factores de asignación y sus pesos</h3>
+                      <h3 className="text-base font-medium mb-4">Assign factors and their weights</h3>
                       <div className="space-y-6">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -1830,15 +1728,15 @@ export default function InboxSettings() {
                                   onCheckedChange={handleCheckboxChange(setCsatEnabled)}
                         className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                      <Label htmlFor="csat">CSAT de agentes</Label>
+                      <Label htmlFor="csat">CSAT of agents</Label>
                     </div>
                               <p className="text-sm text-muted-foreground pl-6">
-                                Prioriza agentes con mejor calificación de satisfacción
+                                Prioritize agents with higher satisfaction ratings
                               </p>
                             </div>
                             {csatEnabled && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-sm">Peso:</Label>
+                                <Label className="text-sm">Weight:</Label>
                                 <Select
                                   value={aiSettings.csatWeight.toString()}
                                   onValueChange={(value) => setAiSettings({...aiSettings, csatWeight: parseInt(value)})}
@@ -1860,7 +1758,7 @@ export default function InboxSettings() {
 
                           {csatEnabled && (
                             <div className="pl-6 space-y-2">
-                              <Label className="text-sm">CSAT mínimo requerido</Label>
+                              <Label className="text-sm">Minimum CSAT required</Label>
                               <Select
                                 value={aiSettings.minCsat.toString()}
                                 onValueChange={(value) => setAiSettings({...aiSettings, minCsat: parseFloat(value)})}
@@ -1871,7 +1769,7 @@ export default function InboxSettings() {
                                 <SelectContent>
                                   {[3.0, 3.5, 4.0, 4.5].map((csat) => (
                                     <SelectItem key={csat} value={csat.toString()}>
-                                      {csat} estrellas
+                                      {csat} stars
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1890,15 +1788,15 @@ export default function InboxSettings() {
                                   onCheckedChange={handleCheckboxChange(setResponseTimeEnabled)}
                         className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                                <Label htmlFor="responseTime">Tiempo de respuesta</Label>
+                                <Label htmlFor="responseTime">Average response time</Label>
                     </div>
                               <p className="text-sm text-muted-foreground pl-6">
-                                Prioriza agentes con mejor tiempo de respuesta promedio
+                                Prioritize agents with shorter average response times
                               </p>
                             </div>
                             {responseTimeEnabled && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-sm">Peso:</Label>
+                                <Label className="text-sm">Weight:</Label>
                                 <Select
                                   value={aiSettings.responseTimeWeight.toString()}
                                   onValueChange={(value) => setAiSettings({...aiSettings, responseTimeWeight: parseInt(value)})}
@@ -1920,7 +1818,7 @@ export default function InboxSettings() {
 
                           {responseTimeEnabled && (
                             <div className="pl-6 space-y-2">
-                              <Label className="text-sm">Tiempo máximo de respuesta</Label>
+                              <Label className="text-sm">Maximum response time</Label>
                               <Select
                                 value={aiSettings.maxResponseTime.toString()}
                                 onValueChange={(value) => setAiSettings({...aiSettings, maxResponseTime: parseInt(value)})}
@@ -1931,7 +1829,7 @@ export default function InboxSettings() {
                                 <SelectContent>
                                   {[5, 10, 15, 20, 30].map((time) => (
                                     <SelectItem key={time} value={time.toString()}>
-                                      {time} minutos
+                                      {time} minutes
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1950,15 +1848,15 @@ export default function InboxSettings() {
                                   onCheckedChange={handleCheckboxChange(setHistoryEnabled)}
                         className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                      <Label htmlFor="history">Historial de conversaciones</Label>
+                      <Label htmlFor="history">Conversation history</Label>
                     </div>
                               <p className="text-sm text-muted-foreground pl-6">
-                                Prioriza agentes que han interactuado previamente con el cliente
+                                Prioritize agents who have interacted with the client previously
                               </p>
                             </div>
                             {historyEnabled && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-sm">Peso:</Label>
+                                <Label className="text-sm">Weight:</Label>
                                 <Select
                                   value={aiSettings.historyWeight.toString()}
                                   onValueChange={(value) => setAiSettings({...aiSettings, historyWeight: parseInt(value)})}
@@ -1989,15 +1887,15 @@ export default function InboxSettings() {
                                   onCheckedChange={handleCheckboxChange(setSentimentEnabled)}
                         className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                                <Label htmlFor="sentiment">Sentimiento del cliente</Label>
+                                <Label htmlFor="sentiment">Client sentiment</Label>
                     </div>
                               <p className="text-sm text-muted-foreground pl-6">
-                                Prioriza agentes con mejor manejo de situaciones similares
+                                Prioritize agents who handle similar situations well
                               </p>
                   </div>
                             {sentimentEnabled && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-sm">Peso:</Label>
+                                <Label className="text-sm">Weight:</Label>
                                 <Select
                                   value={aiSettings.sentimentWeight.toString()}
                                   onValueChange={(value) => setAiSettings({...aiSettings, sentimentWeight: parseInt(value)})}
@@ -2021,9 +1919,163 @@ export default function InboxSettings() {
                     </div>
 
                     <div className="space-y-4 pt-6 border-t">
-                      <h3 className="text-base font-medium">Configuración adicional</h3>
-                      
-                      <div className="space-y-4">
+                      <h3 className="text-base font-medium">Additional configuration</h3>
+
+                      {/* NUEVA SECCIÓN: Equitable Distribution */}
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="equitable-distribution"
+                          checked={isEquitableDistributionEnabled}
+                          onCheckedChange={(checked) => {
+                              setIsEquitableDistributionEnabled(checked === true);
+                              handleSectionChange('routingType');
+                          }}
+                          className="mt-1 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <div className="flex items-center gap-2">
+                              <Label htmlFor="equitable-distribution" className="font-medium">
+                                Enable Equitable Distribution
+                              </Label>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 opacity-50">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">When enabled, the system will prioritize agents with fewer open tickets to balance workload.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Ensures that no agent has more than 2 open tickets of difference compared to another agent in the same team.
+                          </p>
+                        </div>
+                      </div>
+                      {/* FIN NUEVA SECCIÓN */}
+
+                      {/* NUEVA SECCIÓN: Pre-Assignment with Timer */}
+                      <div className="flex items-start space-x-3 pt-4 border-t mt-4">
+                        <Checkbox
+                          id="pre-assignment"
+                          checked={isPreAssignmentEnabled}
+                          onCheckedChange={(checked) => {
+                              setIsPreAssignmentEnabled(checked === true);
+                              handleSectionChange('routingType');
+                          }}
+                          className="mt-1 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                        />
+                        <div className="grid gap-1.5 leading-none flex-1">
+                           <div className="flex items-center gap-2">
+                              <Label htmlFor="pre-assignment" className="font-medium">
+                                Enable Pre-Assignment with Timer
+                              </Label>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                     <Button variant="ghost" size="icon" className="h-5 w-5 opacity-50">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">When enabled, tickets will be pre-assigned to agents with high workload, giving them time to prepare before the ticket becomes active.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                          </div>
+                          {isPreAssignmentEnabled && (
+                            <div className="mt-3 space-y-3 pl-1">
+                               <div className="flex items-center gap-2">
+                                 <Label className="text-sm whitespace-nowrap">Pre-assign tickets when an agent has</Label>
+                                 <Input
+                                    type="number"
+                                    min="1"
+                                    value={preAssignmentThreshold}
+                                    onChange={(e) => {
+                                      setPreAssignmentThreshold(Math.max(1, parseInt(e.target.value) || 1));
+                                      handleSectionChange('routingType');
+                                    }}
+                                    className="w-16 h-8"
+                                  />
+                                 <Label className="text-sm">open tickets or more.</Label>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                  <Label className="text-sm">Pre-assignment timer:</Label>
+                                  <Select
+                                    value={preAssignmentTimer}
+                                    onValueChange={(value) => {
+                                      setPreAssignmentTimer(value);
+                                      handleSectionChange('routingType');
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-[120px] h-8">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="5">5 minutes</SelectItem>
+                                      <SelectItem value="10">10 minutes</SelectItem>
+                                      <SelectItem value="15">15 minutes</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                               </div>
+                               <p className="text-xs text-muted-foreground pt-1">
+                                  Note: Pre-assigned tickets will appear in the agent's 'My Tasks' tab with a countdown (e.g., 'Will be assigned in 4:30').
+                               </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* FIN NUEVA SECCIÓN PRE-ASSIGNMENT */}
+
+                      {/* NUEVA SECCIÓN: Handling for Insufficient AI Information */}
+                      <div className="pt-4 border-t mt-4 space-y-3">
+                         <Label className="font-medium text-base">Handling for Insufficient AI Information</Label>
+                         <RadioGroup
+                            value={insufficientInfoHandling}
+                            onValueChange={(value: "queue" | "roundRobin") => {
+                              setInsufficientInfoHandling(value);
+                              handleSectionChange('routingType');
+                            }}
+                          >
+                            {/* Opción 1: Round-Robin */}
+                            <div className="flex items-start space-x-3 rounded-md border p-4 has-[[data-state=checked]]:border-purple-400">
+                              <RadioGroupItem value="roundRobin" id="rr-fallback" className="mt-0.5"/>
+                              <div className="grid gap-1.5 leading-none flex-1">
+                                <Label htmlFor="rr-fallback" className="font-medium cursor-pointer">
+                                  Use Round-Robin Fallback
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                  If AI lacks information, assign via round-robin among available agents (respects general conditions, ignores AI factors).
+                                </p>
+                                <p className="text-xs text-muted-foreground pt-1">
+                                  Message Handling: Uses successful routing message if AI bot is off, or handover message if applicable.
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Opción 2: Send to Queue */}
+                            <div className="flex items-start space-x-3 rounded-md border p-4 has-[[data-state=checked]]:border-purple-400">
+                               <RadioGroupItem value="queue" id="queue-fallback" className="mt-0.5"/>
+                              <div className="grid gap-1.5 leading-none flex-1">
+                                <Label htmlFor="queue-fallback" className="font-medium cursor-pointer">
+                                  Send to Queue (Default)
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                   If AI lacks information, place the ticket in the queue with a 'Missing Information' tag for manual assignment.
+                                </p>
+                                <p className="text-xs text-muted-foreground pt-1">
+                                  Message Handling: No immediate message; applies "Automatic Queue Actions" settings.
+                                </p>
+                              </div>
+                            </div>
+                          </RadioGroup>
+                      </div>
+                      {/* FIN NUEVA SECCIÓN INSUFFICIENT INFO */}
+
+                      <div className="space-y-4 pt-4 border-t mt-4"> {/* Existing wrapper for important note */}
                         <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
                           <div className="flex items-start">
                             <div className="text-amber-600 mr-3 mt-0.5">
@@ -2034,9 +2086,9 @@ export default function InboxSettings() {
                               </svg>
                             </div>
                   <div>
-                              <p className="font-medium text-amber-800">Importante:</p>
+                              <p className="font-medium text-amber-800">Important:</p>
                               <p className="text-amber-700 text-sm">
-                                La IA aprenderá y mejorará sus asignaciones basándose en el rendimiento histórico y los resultados de las interacciones. Asegúrate de mantener actualizados los perfiles de los agentes para obtener mejores resultados.
+                                The AI will learn and improve its assignments based on historical performance and interaction results. Make sure to keep agent profiles up-to-date for better results.
                     </p>
                   </div>
                           </div>
@@ -2087,9 +2139,9 @@ export default function InboxSettings() {
                 </svg>
               </Button>
             <div>
-              <h2 className="text-xl font-semibold">Condiciones Generales</h2>
+              <h2 className="text-xl font-semibold">General Conditions</h2>
               <p className="text-muted-foreground mt-1">
-                Configura condiciones adicionales para el routing de tickets.
+                Configure additional conditions for ticket routing.
               </p>
             </div>
             </div>
@@ -2101,11 +2153,11 @@ export default function InboxSettings() {
                   onClick={() => handleSaveChanges('generalConditions')}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
-                  Guardar cambios
+                  Save Changes
                 </Button>
               )}
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Activado</span>
+              <span className="text-sm font-medium">Enabled</span>
               <Switch
                 id="conditions-enabled"
                 checked={conditionsEnabled}
@@ -2129,12 +2181,8 @@ export default function InboxSettings() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-purple-800">Orden de ejecución:</p>
-                    <p className="text-purple-700 text-sm">
-                      El sistema evaluará las condiciones activadas en el orden que aparecen aquí. 
-                      Puedes reorganizarlas arrastrando el ícono <GripVertical className="h-4 w-4 inline-block mx-1" /> 
-                      para cambiar su prioridad.
-                    </p>
+                    <p className="font-medium text-purple-800">Execution Order:</p>
+                    <p className="text-purple-700 text-sm">The system will evaluate the enabled conditions in the order they appear here. You can reorder them by dragging the <GripVertical className="h-4 w-4 inline-block mx-1" /> icon to change their priority.</p>
                   </div>
                 </div>
               </div>
@@ -2171,13 +2219,11 @@ export default function InboxSettings() {
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    <span className="text-sm">Zona horaria actual: America/Mexico_City</span>
+                    <span className="text-sm">Current timezone: America/Mexico_City</span>
                   </div>
                   <div>
-                    <p className="font-medium text-amber-800">Importante:</p>
-                    <p className="text-amber-700 text-sm">
-                      El sistema evaluará cada condición activada en orden. Si una condición falla, el ticket entrará a una cola y los agentes deberán asignarlo manualmente.
-                    </p>
+                    <p className="font-medium text-amber-800">Important:</p>
+                    <p className="text-amber-700 text-sm">The system will evaluate each enabled condition in order. If a condition fails, the defined fallback message will be used.</p>
                   </div>
                 </div>
               </div>
